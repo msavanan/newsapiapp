@@ -1,36 +1,8 @@
-/*
-import 'package:flutter/material.dart';
-
-import 'home.dart';
-
-void main() {
-  runApp(const NewsApiApp());
-}
-
-class NewsApiApp extends StatefulWidget {
-  const NewsApiApp({Key? key}) : super(key: key);
-
-  @override
-  _NewsApiAppState createState() => _NewsApiAppState();
-}
-
-class _NewsApiAppState extends State<NewsApiApp> {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(primaryColor: Colors.white),
-        home: const Scaffold(body: Home()));
-  }
-}
-*/
-
 import 'package:flutter/material.dart';
 import 'package:news_api_flutter_package/model/article.dart';
 import 'package:news_api_flutter_package/model/error.dart';
 import 'package:news_api_flutter_package/model/source.dart';
 import 'package:news_api_flutter_package/news_api_flutter_package.dart';
-import 'package:newsapiapp/article_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'create_article.dart';
