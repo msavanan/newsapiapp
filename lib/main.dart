@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 import 'package:news_api_flutter_package/model/article.dart';
 import 'package:news_api_flutter_package/model/error.dart';
 import 'package:news_api_flutter_package/model/source.dart';
 import 'package:news_api_flutter_package/news_api_flutter_package.dart';
+import 'package:newsapiapp/search_page.dart';
+import 'package:newsapiapp/verify_apikey.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'create_article.dart';
@@ -17,9 +21,102 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'News API',
-      home: HomePage(),
+        debugShowCheckedModeBanner: false,
+        title: 'News API',
+        home: SetApiKey() //HomePage(),
+        );
+  }
+}
+
+class SetApiKey extends StatefulWidget {
+  const SetApiKey({Key? key}) : super(key: key);
+
+  @override
+  State<SetApiKey> createState() => _SetApiKeyState();
+}
+
+class _SetApiKeyState extends State<SetApiKey> {
+  final _formKey = GlobalKey<FormState>();
+  bool isValidating = false;
+  final VerifyApiKey verifyApiKey = VerifyApiKey();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Scaffold(
+        body: ModalProgressHUD(
+          inAsyncCall: isValidating,
+          child: SingleChildScrollView(
+            child: Padding(
+              padding:
+                  EdgeInsets.only(top: MediaQuery.of(context).size.height * .3),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Align(
+                          alignment: Alignment.centerLeft,
+                          child: Padding(
+                              padding: EdgeInsets.only(left: 30),
+                              child: Text('API Key'))),
+                      Padding(
+                        padding: const EdgeInsets.only(
+                            left: 30.0, right: 30, top: 5),
+                        child: TextFormField(
+                            inputFormatters: [
+                              FilteringTextInputFormatter(RegExp('[a-zA-Z0-9]'),
+                                  allow: true)
+                            ],
+                            onChanged: (apiKey) {
+                              verifyApiKey.apiKey = apiKey.trim();
+                            },
+                            validator: (apiKey) {
+                              if ((apiKey?.isEmpty)!) {
+                                return "API key can't be empty";
+                              } else if (verifyApiKey.status == 'error' ||
+                                  verifyApiKey.code == 'apiKeyInvalid') {
+                                return 'Invalid API Key';
+                              } else if (verifyApiKey.code == 'apiKeyMissing') {
+                                return 'API Key is missing';
+                              }
+                              return null;
+                            },
+                            decoration: const InputDecoration(
+                                hintText: 'API Key goes here',
+                                border: OutlineInputBorder(
+                                    borderSide: BorderSide()))),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 15),
+                        child: SizedBox(
+                          width: MediaQuery.of(context).size.width * 0.4,
+                          child: ElevatedButton(
+                            child: const Text('Ok'),
+                            onPressed: () async {
+                              setState(() {
+                                isValidating = true;
+                              });
+                              await verifyApiKey.getResponse();
+                              setState(() {
+                                isValidating = false;
+                              });
+                              if ((_formKey.currentState?.validate())!) {
+                                Navigator.of(context).push(MaterialPageRoute(
+                                    builder: (BuildContext context) {
+                                  return const HomePage();
+                                }));
+                              }
+                            },
+                          ),
+                        ),
+                      )
+                    ]),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -34,6 +131,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   String apiKey = '';
   final NewsAPI _newsAPI = NewsAPI('YOUR API KEY GOES HERE');
+
   //late NewsAPI _newsAPI;
 
   /*getApiKey() async {
@@ -92,6 +190,16 @@ class _HomePageState extends State<HomePage> {
       title: const Text("News API"),
       centerTitle: true,
       bottom: _buildTabBar(),
+      actions: [
+        IconButton(
+            onPressed: () {
+              Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (BuildContext context) {
+                return const SearchPage();
+              }));
+            },
+            icon: const Icon(Icons.search))
+      ],
     );
   }
 
