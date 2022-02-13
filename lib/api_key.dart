@@ -10,6 +10,7 @@ class ApiKey {
   String code = '';
   String status = '';
   bool isKeyExist = false;
+  String query = '';
 
   static final ApiKey _verifyApiKey = ApiKey._instance();
 
@@ -22,8 +23,16 @@ class ApiKey {
   exist() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isApiKeyExist', prefs.containsKey('apiKey'));
+    query = prefs.getString('query') ?? '';
+    await prefs.setString('query', query);
     isKeyExist = prefs.getBool('isApiKeyExist')!;
     return isKeyExist;
+  }
+
+  setQuery(String query) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs = await SharedPreferences.getInstance();
+    await prefs.setString('query', query);
   }
 
   getApiKey() async {

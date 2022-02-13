@@ -5,7 +5,6 @@ import 'package:news_api_flutter_package/model/error.dart';
 import 'package:news_api_flutter_package/model/source.dart';
 import 'package:news_api_flutter_package/news_api_flutter_package.dart';
 
-import 'package:newsapiapp/search_page.dart';
 import 'package:newsapiapp/api_key.dart';
 import 'package:newsapiapp/create_article.dart';
 
@@ -16,8 +15,24 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
   final NewsAPI _newsAPI = NewsAPI(ApiKey().key);
+  //final NewsAPI _newsAPI = NewsAPI("");
+  String query = '';
+  final _formKey = GlobalKey<FormState>();
+  TabController? _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(
+      vsync: this,
+      length: 3,
+      initialIndex: 0,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -48,10 +63,86 @@ class _HomePageState extends State<HomePage> {
       actions: [
         IconButton(
             onPressed: () {
-              Navigator.of(context)
-                  .push(MaterialPageRoute(builder: (BuildContext context) {
-                return const SearchPage();
-              }));
+              final double mWidth = MediaQuery.of(context).size.width;
+              final double mHeight = MediaQuery.of(context).size.height;
+              final double width = mWidth * .9;
+              final double height = mHeight * .23;
+              const double fixedHeight = 190;
+              const double fixedWidth = 370;
+
+              showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return Dialog(
+                      child: SizedBox(
+                        width: width >= fixedWidth
+                            ? width
+                            : mWidth >= fixedWidth
+                                ? fixedWidth
+                                : mWidth,
+                        height: height >= fixedHeight
+                            ? height
+                            : mHeight >= fixedHeight
+                                ? fixedHeight
+                                : mHeight,
+                        child: Material(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Form(
+                              key: _formKey,
+                              child: Column(
+                                children: [
+                                  TextFormField(
+                                    onChanged: (value) {
+                                      query = value;
+                                    },
+                                    validator: (String? val) {
+                                      if ((val?.isEmpty)!) {
+                                        return "Search can't be Empty";
+                                      }
+                                    },
+                                    decoration: const InputDecoration(
+                                        hintText: 'Search',
+                                        border: OutlineInputBorder(
+                                            borderSide: BorderSide())),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 24.0),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceAround,
+                                      children: [
+                                        ElevatedButton(
+                                          child: const Text('OK'),
+                                          onPressed: () async {
+                                            if ((_formKey.currentState
+                                                ?.validate())!) {
+                                              setState(() {
+                                                query = query;
+                                              });
+                                              _tabController?.animateTo(1);
+                                              await ApiKey().setQuery(query);
+                                              Navigator.of(context).pop();
+                                            }
+                                          },
+                                        ),
+                                        ElevatedButton(
+                                          child: const Text('Cancel'),
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                          },
+                                        )
+                                      ],
+                                    ),
+                                  )
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  });
             },
             icon: const Icon(Icons.search))
       ],
@@ -59,17 +150,19 @@ class _HomePageState extends State<HomePage> {
   }
 
   TabBar _buildTabBar() {
-    return const TabBar(
+    return TabBar(
+      controller: _tabController,
       tabs: [
-        Tab(text: "Top Headlines"),
-        Tab(text: "Everything"),
-        Tab(text: "Sources"),
+        const Tab(text: "Top Headlines"),
+        Tab(text: query.isEmpty ? "Everything" : query),
+        const Tab(text: "Sources"),
       ],
     );
   }
 
   Widget _buildBody() {
     return TabBarView(
+      controller: _tabController,
       children: [
         _buildTopHeadlinesTabView(),
         _buildEverythingTabView(),
@@ -92,7 +185,8 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildEverythingTabView() {
     return FutureBuilder<List<Article>>(
-        future: _newsAPI.getEverything(query: "bitcoin"),
+        future:
+            _newsAPI.getEverything(query: query.isNotEmpty ? query : "bitcoin"),
         builder: (BuildContext context, AsyncSnapshot<List<Article>> snapshot) {
           return snapshot.connectionState == ConnectionState.done
               ? snapshot.hasData

@@ -1,13 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class ArticleView extends StatefulWidget {
   final String postUrl;
 
-  const ArticleView({required this.postUrl});
+  const ArticleView({Key? key, required this.postUrl}) : super(key: key);
 
   @override
   _ArticleViewState createState() => _ArticleViewState();
