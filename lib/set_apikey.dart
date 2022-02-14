@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:newsapiapp/api_key.dart';
 import 'package:newsapiapp/home_page.dart';
@@ -95,6 +97,23 @@ class _SetApiKeyState extends State<SetApiKey> {
                             },
                           ),
                         ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 24.0),
+                        child: InkWell(
+                            onTap: () async {
+                              try {
+                                const url = 'https://newsapi.org/register';
+                                if (await canLaunch(url)) {
+                                  await launch(url);
+                                }
+                              } catch (error) {
+                                if (kDebugMode) {
+                                  print(error);
+                                }
+                              }
+                            },
+                            child: const Text("Get ApiKey")),
                       )
                     ]),
               ),

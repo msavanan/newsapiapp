@@ -11,6 +11,13 @@ class ApiKey {
   String status = '';
   bool isKeyExist = false;
   String query = '';
+  static String sortBy = 'relevancy';
+  static const List<String> sortByList = [
+    'relevancy',
+    'popularity',
+    'publishedAt'
+  ];
+  static String? source;
 
   static final ApiKey _verifyApiKey = ApiKey._instance();
 

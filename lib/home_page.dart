@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import 'package:news_api_flutter_package/model/article.dart';
-import 'package:news_api_flutter_package/model/error.dart';
-import 'package:news_api_flutter_package/model/source.dart';
-import 'package:news_api_flutter_package/news_api_flutter_package.dart';
+import 'package:newsapiapp/news_api_flutter_package/model/article.dart';
+import 'package:newsapiapp/news_api_flutter_package/model/error.dart';
+import 'package:newsapiapp/news_api_flutter_package/model/source.dart';
+import 'package:newsapiapp/news_api_flutter_package/news_api_flutter_package.dart';
 
 import 'package:newsapiapp/api_key.dart';
 import 'package:newsapiapp/create_article.dart';
@@ -18,16 +18,19 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage>
-    with SingleTickerProviderStateMixin {
-  //final NewsAPI _newsAPI = NewsAPI(ApiKey().key);
-  final NewsAPI _newsAPI = NewsAPI("");
+    with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
+  final NewsAPI _newsAPI = NewsAPI(ApiKey().key);
+  //final NewsAPI _newsAPI = NewsAPI("");
   String query = ApiKey().query;
   TabController? _tabController;
+  String? updateSource;
 
   onPressed(String strQuery) {
     setState(() {
       query = strQuery;
     });
+    print('++++++++++++++++++++++++');
+    print(query);
     _tabController?.animateTo(1);
   }
 
@@ -70,7 +73,7 @@ class _HomePageState extends State<HomePage>
                                       child: SizedBox(
                                         height:
                                             MediaQuery.of(context).size.height *
-                                                0.3,
+                                                0.35,
                                         child: const Center(
                                             child: SetApiKey(
                                           topPadding: 0.07,
@@ -78,10 +81,6 @@ class _HomePageState extends State<HomePage>
                                       ),
                                     );
                                   });
-                              /*Navigator.of(context).push(MaterialPageRoute(
-                                  builder: (BuildContext context) {
-                                return const SetApiKey();
-                              }));*/
                             },
                             child: Text(ApiKey().key)))
                   ],
@@ -142,7 +141,9 @@ class _HomePageState extends State<HomePage>
 
   Widget _buildTopHeadlinesTabView() {
     return FutureBuilder<List<Article>>(
-        future: _newsAPI.getTopHeadlines(country: "us"),
+        future: updateSource == null
+            ? _newsAPI.getTopHeadlines(country: "in")
+            : _newsAPI.getTopHeadlines(sources: ApiKey.source),
         builder: (BuildContext context, AsyncSnapshot<List<Article>> snapshot) {
           return snapshot.connectionState == ConnectionState.done
               ? snapshot.hasData
@@ -154,8 +155,10 @@ class _HomePageState extends State<HomePage>
 
   Widget _buildEverythingTabView() {
     return FutureBuilder<List<Article>>(
-        future:
-            _newsAPI.getEverything(query: query.isNotEmpty ? query : "bitcoin"),
+        future: _newsAPI.getEverything(
+            query: query.isNotEmpty ? query : "bitcoin",
+            sortBy: ApiKey.sortBy,
+            sources: ApiKey.source),
         builder: (BuildContext context, AsyncSnapshot<List<Article>> snapshot) {
           return snapshot.connectionState == ConnectionState.done
               ? snapshot.hasData
@@ -172,43 +175,72 @@ class _HomePageState extends State<HomePage>
         Article article = articles[index];
         final String? url = article.url;
         return Card(
-          child: CreateArticle(
-            url: url,
-            child: ListTile(
-              title: Text(article.title!, maxLines: 2),
-              subtitle: Text(article.description ?? "", maxLines: 3),
-              trailing: article.urlToImage == null
-                  ? null
-                  : Image.network(article.urlToImage!),
-            ),
-          ),
-        );
+            child: CreateArticle(
+                url: url,
+                child: ListTile(
+                    title: Text(article.title!, maxLines: 2),
+                    subtitle: Text(article.description ?? "", maxLines: 3),
+                    trailing: article.urlToImage == null
+                        ? null
+                        : Image.network(article.urlToImage!))));
       },
     );
   }
 
   Widget _buildSourcesTabView() {
     return FutureBuilder<List<Source>>(
-      future: _newsAPI.getSources(),
-      builder: (BuildContext context, AsyncSnapshot<List<Source>> snapshot) {
-        return snapshot.connectionState == ConnectionState.done
-            ? snapshot.hasData
-                ? _buildSourceListView(snapshot.data!)
-                : _buildError(snapshot.error as ApiError)
-            : _buildProgress();
-      },
-    );
+        future: _newsAPI.getSources(),
+        builder: (BuildContext context, AsyncSnapshot<List<Source>> snapshot) {
+          return snapshot.connectionState == ConnectionState.done
+              ? snapshot.hasData
+                  ? _buildSourceListView(snapshot.data!)
+                  : _buildError(snapshot.error as ApiError)
+              : _buildProgress();
+        });
   }
 
   Widget _buildSourceListView(List<Source> sources) {
-    return ListView.builder(
-      itemCount: sources.length,
-      itemBuilder: (context, index) {
-        return Card(
-          child: ListTile(
-            title: Text(sources[index].name!),
-            subtitle: Text(sources[index].description!),
-          ),
+    ValueNotifier<List<bool>> selectSource =
+        ValueNotifier<List<bool>>(sources.map((e) => false).toList());
+    reset() {
+      selectSource.value = sources.map((e) => false).toList();
+    }
+
+    onChanged(int index) {
+      selectSource.value[index] = true;
+      setState(() {
+        updateSource = sources[index].name;
+      });
+    }
+
+    return ValueListenableBuilder(
+      valueListenable: selectSource,
+      builder: (context, List<bool> select, child) {
+        return ListView.builder(
+          itemCount: sources.length,
+          itemBuilder: (context, index) {
+            return Card(
+                child: ListTile(
+                    title: Row(
+                      children: [
+                        Checkbox(
+                            value: select[index],
+                            onChanged: (value) {
+                              print('+++++++++++++++++++++++++++++++');
+                              print(value);
+                              reset();
+                              if (value!) {
+                                onChanged(index);
+                                ApiKey.source = sources[index].name;
+                              } else {
+                                reset();
+                              }
+                            }),
+                        Text(sources[index].name!),
+                      ],
+                    ),
+                    subtitle: Text(sources[index].description!)));
+          },
         );
       },
     );
@@ -225,11 +257,9 @@ class _HomePageState extends State<HomePage>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              error.code ?? "",
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 20),
-            ),
+            Text(error.code ?? "",
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 20)),
             const SizedBox(height: 4),
             Text(error.message!, textAlign: TextAlign.center),
           ],
@@ -237,4 +267,7 @@ class _HomePageState extends State<HomePage>
       ),
     );
   }
+
+  @override
+  bool get wantKeepAlive => true;
 }
