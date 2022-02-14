@@ -19,7 +19,7 @@ class _HomePageState extends State<HomePage>
     with SingleTickerProviderStateMixin {
   final NewsAPI _newsAPI = NewsAPI(ApiKey().key);
   //final NewsAPI _newsAPI = NewsAPI("");
-  String query = '';
+  String query = ApiKey().query;
   final _formKey = GlobalKey<FormState>();
   TabController? _tabController;
 
@@ -91,6 +91,7 @@ class _HomePageState extends State<HomePage>
                             child: Form(
                               key: _formKey,
                               child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   TextFormField(
                                     onChanged: (value) {
