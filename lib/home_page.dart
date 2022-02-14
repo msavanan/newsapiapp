@@ -7,6 +7,8 @@ import 'package:news_api_flutter_package/news_api_flutter_package.dart';
 
 import 'package:newsapiapp/api_key.dart';
 import 'package:newsapiapp/create_article.dart';
+import 'package:newsapiapp/search_page.dart';
+import 'package:newsapiapp/set_apikey.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -20,8 +22,14 @@ class _HomePageState extends State<HomePage>
   //final NewsAPI _newsAPI = NewsAPI(ApiKey().key);
   final NewsAPI _newsAPI = NewsAPI("");
   String query = ApiKey().query;
-  final _formKey = GlobalKey<FormState>();
   TabController? _tabController;
+
+  onPressed(String strQuery) {
+    setState(() {
+      query = strQuery;
+    });
+    _tabController?.animateTo(1);
+  }
 
   @override
   void initState() {
@@ -40,15 +48,47 @@ class _HomePageState extends State<HomePage>
         length: 3,
         child: Scaffold(
           appBar: _buildAppBar(),
-          drawer: Drawer(
+          drawer: SizedBox(
+            width: MediaQuery.of(context).size.width * .8,
+            child: Drawer(
               backgroundColor: Colors.white,
               child: Padding(
                 padding: const EdgeInsets.only(top: 60, left: 20, right: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [const Text('Api Key'), Text(ApiKey().key)],
+                  children: [
+                    const Text('Api Key'),
+                    Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: InkWell(
+                            onTap: () {
+                              Navigator.pop(context);
+                              showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return Dialog(
+                                      child: SizedBox(
+                                        height:
+                                            MediaQuery.of(context).size.height *
+                                                0.3,
+                                        child: const Center(
+                                            child: SetApiKey(
+                                          topPadding: 0.07,
+                                        )),
+                                      ),
+                                    );
+                                  });
+                              /*Navigator.of(context).push(MaterialPageRoute(
+                                  builder: (BuildContext context) {
+                                return const SetApiKey();
+                              }));*/
+                            },
+                            child: Text(ApiKey().key)))
+                  ],
                 ),
-              )),
+              ),
+            ),
+          ),
           body: _buildBody(),
         ),
       ),
@@ -63,85 +103,13 @@ class _HomePageState extends State<HomePage>
       actions: [
         IconButton(
             onPressed: () {
-              final double mWidth = MediaQuery.of(context).size.width;
-              final double mHeight = MediaQuery.of(context).size.height;
-              final double width = mWidth * .9;
-              final double height = mHeight * .23;
-              const double fixedHeight = 190;
-              const double fixedWidth = 370;
-
               showDialog(
                   context: context,
                   builder: (BuildContext context) {
-                    return Dialog(
-                      child: SizedBox(
-                        width: width >= fixedWidth
-                            ? width
-                            : mWidth >= fixedWidth
-                                ? fixedWidth
-                                : mWidth,
-                        height: height >= fixedHeight
-                            ? height
-                            : mHeight >= fixedHeight
-                                ? fixedHeight
-                                : mHeight,
-                        child: Material(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Form(
-                              key: _formKey,
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  TextFormField(
-                                    onChanged: (value) {
-                                      query = value;
-                                    },
-                                    validator: (String? val) {
-                                      if ((val?.isEmpty)!) {
-                                        return "Search can't be Empty";
-                                      }
-                                    },
-                                    decoration: const InputDecoration(
-                                        hintText: 'Search',
-                                        border: OutlineInputBorder(
-                                            borderSide: BorderSide())),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 24.0),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceAround,
-                                      children: [
-                                        ElevatedButton(
-                                          child: const Text('OK'),
-                                          onPressed: () async {
-                                            if ((_formKey.currentState
-                                                ?.validate())!) {
-                                              setState(() {
-                                                query = query;
-                                              });
-                                              _tabController?.animateTo(1);
-                                              await ApiKey().setQuery(query);
-                                              Navigator.of(context).pop();
-                                            }
-                                          },
-                                        ),
-                                        ElevatedButton(
-                                          child: const Text('Cancel'),
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                          },
-                                        )
-                                      ],
-                                    ),
-                                  )
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                    return SearchPage(
+                      onPressed: (strQuery) {
+                        onPressed(strQuery);
+                      },
                     );
                   });
             },
